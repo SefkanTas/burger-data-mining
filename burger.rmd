@@ -9,22 +9,163 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r importation libs,echo=FALSE, message=FALSE}
+library(tidyverse)
+library(corrplot)
+library(dplyr)
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r importation du fichier, echo=FALSE}
+burger = read.table(file="NutritionBurger.csv", header=TRUE, sep=";")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+# Présentation du jeu de données
+
+Pour commencer, notre jeu de données est constitué de 80 items pour 14 variables.
+```{r dim}
+dim(burger)
+```
+
+Puis nous avons des variables sous différentes unités de mesures : le cholestérol et le sodium sont en milligramme alors que le reste des macronutriments sont en gramme, nous avons donc besoin de nettoyer les données afin de travailler sur le même ordre de grandeur pour ces variables.
+```{r nettoyage des données, echo=FALSE}
+burger$Cholesterol = burger$Cholesterol/1000
+burger$Sodium = burger$Sodium/1000
+burger$Restaurant = as.factor(burger$Restaurant)
+burger$Type = as.factor(burger$Type)
+burger$Breakfast = as.factor(burger$Breakfast)
+```
+
+Nous avons trois restaurants qui proposent différents type d'item (i.e "articles") ainsi que des formules pour le petit-déjeuner :
+```{r restaurant/breakfast, echo=FALSE}
+table(burger$Breakfast, burger$Restaurant)
+```
+Cependant McDonalds est le seul des 3 restaurants à proposer des formules petit-déjeuner, c'est pourquoi nous décidons de les retirer car les données ne seront pas suffisante pour en tirer des informations utiles. Nous avons donc maintenant 77 items.
+```{r, echo=FALSE, results="hide"}
+burger = burger %>% filter(Breakfast=="No")
+dim(burger)
+```
+
+Voici la répartition des items pour chaque restaurant :
+```{r restaurant/type, echo=FALSE}
+table(burger$Type, burger$Restaurant)
+```
+Nous pouvons nous rendre compte que la majorité des items sont des Sandwich.
+
+
+# Quel restaurant est le plus healthy ?
+* Comparer la moyenne calorique de chaque restaurant
+
+```{r calorie par restaurant, echo=FALSE}
+calPerRest = burger %>% group_by(Restaurant) %>% summarise(mean(Calories))
+calPerRest
+##calPerRest %>% ggplot(aes(x=Restaurant, y=`mean(Calories)`)) + geom_histogram(stat="identity")
+```
+Ici nous observons que McDonalds est en moyenne plus calorique que les deux autres restaurants, nous pouvons nous demander si la quantité de chaque item peut en être la cause. Pour vérifier cela nous allons calculer la moyenne de calorique de chaque gramme pour chaque item d'un restaurant, pour faire simple, nous répondons à la question : Combien de calorie il y a en moyenne dans chaque gramme des items d'un restaurant.
+```{r calories per gram per restaurant, echo=FALSE}
+#cpg = calorie par gramme
+burger$cpg = burger$Calories / burger$ServingSize
+cpgPerRest = burger %>% group_by(Restaurant) %>%  summarise(mean(cpg))
+cpgPerRest
+```
+```{r, echo=FALSE}
+calAndCpg = merge(calPerRest,cpgPerRest)
+calAndCpg
+calAndCpg %>% ggplot(aes(x=`mean(Calories)`, y=`mean(cpg)`, color=Restaurant)) + geom_point()
+```
+Ici nous voyons donc que la moyenne des calories par gramme d'un restaurant n'a pas de rapport avec la moyenne des calories d'un restaurant. A moins que cette différence vienne d'autre part, notamment du type des items.
+
+Pour cela nous pouvons commencer par regarder quelles types d'items sont les plus caloriques, et lesquels sont les moins caloriques :
+
+```{r calories par type, echo=FALSE}
+caloriesPerType = burger %>% group_by(Type) %>% summarise(mean(cpg))
+caloriesPerType
+caloriesPerType %>% ggplot(aes(x=Type, y=`mean(cpg)`, fill=Type)) + geom_histogram(stat="identity")
+```
+Nous observons que les salades sont de loin le type le moins calorique, ils possèdent moins de la moitié des grammes par rapport aux autres types.
+
+Sur la table des type/restaurant nous voyons que BurgerKing, le restaurant le plus calorique, ne propose aucune salade dans son menu. Nous allons donc regarder ce que donne le resultat des calories par gramme en retirant des salade de la liste.
+
+```{r burgers sans salade, echo=FALSE}
+burgerSS = burger %>% filter(Type!="Salad")
+burgerSS$cpg = burgerSS$Calories / burgerSS$ServingSize
+cpgPerRestSS = burgerSS %>% group_by(Restaurant) %>%  summarise(mean(cpg))
+cpgPerRestSS
+```
+Nous voyons que l'écart se réduit mais BurgerKing reste toujours le restaurant le plus calorique. Afin de comprendre pourquoi nous allons comparer chaque type de chaque restaurant pour comprendre d'où cette différence peut venir.
+
+---
+
+# Ce qu'il y a en dessous c'est du brouillon
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Effectif croisés
+```{r}
+aa = table(burger$Type, burger$Restaurant)
+table(burger$Breakfast, burger$Restaurant)
+aa
+#aa %>% corrplot()
+```
+
+
+
+Analyse des calories en fonction de la taille du nom de l'item
+```{r }
+###A revoir plus tard
+bgNameSize = burger %>% mutate(NameSize=nchar(Item))
+bgNameSizeAndCal = bgNameSize %>% group_by(NameSize) %>% summarise(mean(Calories)) %>% arrange(`mean(Calories)`)
+bgNameSizeAndCal %>% ggplot(aes(x=NameSize, y=`mean(Calories)`)) + geom_jitter()
+```
+
+Lien entre Serving Size et calories
+```{r}
+burger %>% ggplot(aes(x=ServingSize, y=Calories)) + geom_jitter()
+```
+On remarque que plus la quantité est grande plus le nombre de calories est grand.
+On se demande donc quel peut être le résultat en faisant ça avec le nombre de calorie par gramme.
+
+serving size divisé par calorie
+cpg = calorie per gram
+
+```{r}
+burger$cpg = burger$Calories / burger$ServingSize
+burger %>% ggplot(aes(x=ServingSize, y=cpg, color=Type)) + geom_jitter()
+```
+On remarque donc qu'il n'y a pas de rapport entre la quantité par item et son nombre de calories.
+
+On peut toutefois remarquer que certain type d'item ont des quantités calorique similaire.
+
+```{r calories par typee}
+caloriesPerType = burger %>% group_by(Type) %>% summarise(mean(cpg))
+caloriesPerType
+caloriesPerType %>% ggplot(aes(x=Type, y=`mean(cpg)`, fill=Type)) + geom_histogram(stat="identity")
+```
+
+
+Moyenne de la taille des plats servis par restaurant
+Et moyenne des calories de chaque plat
+```{r some draft}
+#burger %>% group_by(Restaurant) %>% summarise(mean = mean(ServingSize), n = n())
+#burger %>% group_by(Restaurant) %>% summarise("moyenne (kcal)" = mean(Calories), n = n())
+```
+
+
+
