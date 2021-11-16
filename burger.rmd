@@ -94,6 +94,7 @@ cpgPerRestSS
 ```
 Nous voyons que l'écart se réduit mais BurgerKing reste toujours le restaurant le plus calorique. Afin de comprendre pourquoi nous allons comparer chaque type de chaque restaurant pour comprendre d'où cette différence peut venir.
 ```{r}
+#C'est aussi du brouillon
 mcdo = burger %>% filter(Restaurant=="McDonalds")
 wendys = burger %>% filter(Restaurant=="Wendys")
 bk = burger %>% filter(Restaurant=="BurgerKing")
