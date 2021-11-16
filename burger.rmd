@@ -27,7 +27,7 @@ Pour commencer, notre jeu de données est constitué de 80 items pour 14 variabl
 dim(burger)
 ```
 
-Puis nous avons des variables sous différentes unités de mesures : le cholestérol et le sodium sont en milligramme alors que le reste des macronutriments sont en gramme, nous avons donc besoin de nettoyer les données afin de travailler sur le même ordre de grandeur pour ces variables.
+Nous avons des variables sous différentes unités de mesures : le cholestérol et le sodium sont en milligramme alors que le reste des macronutriments sont en gramme, nous avons donc besoin de nettoyer les données afin de travailler sur le même ordre de grandeur pour ces variables.
 ```{r nettoyage des données, echo=FALSE}
 burger$Cholesterol = burger$Cholesterol/1000
 burger$Sodium = burger$Sodium/1000
@@ -36,7 +36,7 @@ burger$Type = as.factor(burger$Type)
 burger$Breakfast = as.factor(burger$Breakfast)
 ```
 
-Nous avons trois restaurants qui proposent différents type d'item (i.e "articles") ainsi que des formules pour le petit-déjeuner :
+Nous avons trois restaurants qui proposent différents type d'item (i.e "articles") ainsi que des formules pour le petit-déjeuner, voici le nombre de formules petit-déjeuner proposer par chaque restaurants :
 ```{r restaurant/breakfast, echo=FALSE}
 table(burger$Breakfast, burger$Restaurant)
 ```
@@ -61,14 +61,14 @@ calPerRest = burger %>% group_by(Restaurant) %>% summarise(mean(Calories))
 calPerRest
 ##calPerRest %>% ggplot(aes(x=Restaurant, y=`mean(Calories)`)) + geom_histogram(stat="identity")
 ```
-Ici nous observons que McDonalds est en moyenne plus calorique que les deux autres restaurants, nous pouvons nous demander si la quantité de chaque item peut en être la cause. Pour vérifier cela nous allons calculer la moyenne de calorique de chaque gramme pour chaque item d'un restaurant, pour faire simple, nous répondons à la question : Combien de calorie il y a en moyenne dans chaque gramme des items d'un restaurant.
+Ici nous observons que McDonalds est en moyenne plus calorique que les deux autres restaurants, nous pouvons nous demander si la taille de la portion peut en être la cause. Pour vérifier cela nous allons calculer la moyenne de calorique de chaque gramme pour chaque item d'un restaurant, pour faire simple, nous répondons à la question : Combien de calorie il y a en moyenne dans chaque gramme des items d'un restaurant. Nous trouvons le résultat suivant :
 ```{r calories per gram per restaurant, echo=FALSE}
 #cpg = calorie par gramme
 burger$cpg = burger$Calories / burger$ServingSize
 cpgPerRest = burger %>% group_by(Restaurant) %>%  summarise(mean(cpg))
 cpgPerRest
 ```
-```{r, echo=FALSE}
+```{r a, echo=FALSE}
 calAndCpg = merge(calPerRest,cpgPerRest)
 calAndCpg
 calAndCpg %>% ggplot(aes(x=`mean(Calories)`, y=`mean(cpg)`, color=Restaurant)) + geom_point()
@@ -84,7 +84,7 @@ caloriesPerType %>% ggplot(aes(x=Type, y=`mean(cpg)`, fill=Type)) + geom_histogr
 ```
 Nous observons que les salades sont de loin le type le moins calorique, ils possèdent moins de la moitié des grammes par rapport aux autres types.
 
-Sur la table des type/restaurant nous voyons que BurgerKing, le restaurant le plus calorique, ne propose aucune salade dans son menu. Nous allons donc regarder ce que donne le resultat des calories par gramme en retirant des salade de la liste.
+Sur la table des type/restaurant nous voyons que BurgerKing, le restaurant le plus calorique, ne propose aucune salade dans son menu. Nous allons donc regarder ce que donne le resultat des calories par gramme en retirant les salades de la liste.
 
 ```{r burgers sans salade, echo=FALSE}
 burgerSS = burger %>% filter(Type!="Salad")
@@ -93,6 +93,22 @@ cpgPerRestSS = burgerSS %>% group_by(Restaurant) %>%  summarise(mean(cpg))
 cpgPerRestSS
 ```
 Nous voyons que l'écart se réduit mais BurgerKing reste toujours le restaurant le plus calorique. Afin de comprendre pourquoi nous allons comparer chaque type de chaque restaurant pour comprendre d'où cette différence peut venir.
+```{r}
+mcdo = burger %>% filter(Restaurant=="McDonalds")
+wendys = burger %>% filter(Restaurant=="Wendys")
+bk = burger %>% filter(Restaurant=="BurgerKing")
+
+mcdoCpgType =  mcdo %>% group_by(Restaurant) %>% group_by(Type) %>% summarise(mean(cpg))
+wendysCpgType = wendys %>% group_by(Restaurant) %>% group_by(Type) %>% summarise(mean(cpg))
+bkCpgType = bk %>% group_by(Restaurant) %>% group_by(Type) %>% summarise(mean(cpg))
+
+mcdoCpgType$Restaurant = as.factor("McDonalds")
+wendysCpgType$Restaurant = as.factor("Wendys")
+bkCpgType$Restaurant = as.factor("BurgerKing")
+mcdoCpgType
+#cpgTypeRests$BurgerKin = 
+```
+
 
 ---
 
