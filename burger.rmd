@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(corrplot)
 library(dplyr)
+library(cluster)
 ```
 
 
@@ -93,6 +94,45 @@ cpgPerRestSS = burgerSS %>% group_by(Restaurant) %>%  summarise(mean(cpg))
 cpgPerRestSS
 ```
 Nous voyons que l'écart se réduit mais BurgerKing reste toujours le restaurant le plus calorique. Afin de comprendre pourquoi nous allons comparer chaque type de chaque restaurant pour comprendre d'où cette différence peut venir.
+
+
+
+## Nutrition
+
+Pour cette étude nous avons plusieurs données concernant la nutrition qui ont été brièvement presentés plus haut.
+Nous allons donc nous interessé à chacun de ces mesures de données dans les difféerents produits pour tous les restaurants.
+Du plus nocif au moins nocif
+
+#### Calories (à placer ailleurs)
+Les calories servent à quantifier l'énergie apportée au corps par les aliments ingérés.
+Le besoin énergetique moyen pour une femme est de 2 000 et 2 200 kcal et pour un homme entre 2 400 et 2 700 kcal. Ce besoin varie en fonction de plusieurs facteurs comme l'âge ou le poids. 
+
+#### Sodium (en grammes)
+
+En moyenne, la quantité suffisante de sodium necessaire et suffisante est de 1 500 mg soit 1.5 g et la dose qui est nocive est 2 300 mg soit 2.3 g. Nous allons donc voir quels produits dépassent la quantité suffisante (<1,5g et >2,3g )
+
+```{r sodium , echo=FALSE}
+ggplot(burger, aes(x=Item,y=Sodium)) + geom_point() + annotate(geom = "rect",xmin = -Inf,xmax = Inf,ymin = 1.5,ymax = 2.3,alpha= 0.2 ,fill="red")
+```
+
+
+#### Lipides
+
+Les lipides englobent plusieurs nutriments notamment les graisses, les graisses saturés et le cholestérol présents dans nos données.
+
+
+
+#### Glucides
+
+Dans la famille des glucides, nous retrouvons les glucides, les fibres et le sucre.
+
+#### Protéines
+
+Les protéines sont des nutriments nécessaire à notre organisme ....
+A consommer sans modération car jusque aujourd'hui aucune étude ne démontre des effets nocifs à la santé lié à la surconsommation.
+
+### Conclusion
+
 ```{r}
 #C'est aussi du brouillon
 mcdo = burger %>% filter(Restaurant=="McDonalds")
