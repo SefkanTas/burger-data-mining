@@ -13,7 +13,6 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(corrplot)
 library(dplyr)
-library(cluster)
 ```
 
 
@@ -100,38 +99,83 @@ Nous voyons que l'écart se réduit mais BurgerKing reste toujours le restaurant
 ## Nutrition
 
 Pour cette étude nous avons plusieurs données concernant la nutrition qui ont été brièvement presentés plus haut.
-Nous allons donc nous interessé à chacun de ces mesures de données dans les difféerents produits pour tous les restaurants.
+Nous allons donc nous interesser à chacune de ces mesures de données dans les différents produits pour tous les restaurants.
 Du plus nocif au moins nocif
 
 #### Calories (à placer ailleurs)
 Les calories servent à quantifier l'énergie apportée au corps par les aliments ingérés.
 Le besoin énergetique moyen pour une femme est de 2 000 et 2 200 kcal et pour un homme entre 2 400 et 2 700 kcal. Ce besoin varie en fonction de plusieurs facteurs comme l'âge ou le poids. 
 
+Un gramme de lipide apporte 9 kcal.
+Un gramme de protéine apporte 4 kcal.
+Un gramme de glucide apporte 4 kcal.
+
 #### Sodium (en grammes)
 
-En moyenne, la quantité suffisante de sodium necessaire et suffisante est de 1 500 mg soit 1.5 g et la dose qui est nocive est 2 300 mg soit 2.3 g. Nous allons donc voir quels produits dépassent la quantité suffisante (<1,5g et >2,3g )
+En moyenne, la quantité de sodium necessaire et suffisante est de 1.5 g et la dose qui est nocive est de 2.3 g. Nous allons donc voir quels produits dépassent la quantité suffisante (<1,5g et >2,3g )
 
 ```{r sodium , echo=FALSE}
-ggplot(burger, aes(x=Item,y=Sodium)) + geom_point() + annotate(geom = "rect",xmin = -Inf,xmax = Inf,ymin = 1.5,ymax = 2.3,alpha= 0.2 ,fill="red")
+ggplot(burger, aes(x=Sodium,y=Item)) + geom_point() + annotate(geom = "rect",ymin = -Inf,ymax = Inf,xmin = 1.5,xmax = 2.3,alpha= 0.2 ,fill="red")
 ```
+
+On voit qu'il y a 8 produits qui sont nocifs pour la santé au vu de leur teneur en sodium. 
+
+```{r sodium_elimines , echo=FALSE}
+sodium = select(burger, Item, Type,Sodium ,Restaurant) %>% filter(Sodium < 2.3 & Sodium > 1.5) %>% arrange(desc(Sodium))
+sans_sodium = filter(burger, Sodium < 1.5)
+sodium
+```
+Pour l'instant la majorité des produits nocifs pour la santé viennent du Restaurannt Wendys et BurgerKing.
+
+Nous allons les retirer des analyses suivantes.
 
 
 #### Lipides
 
 Les lipides englobent plusieurs nutriments notamment les graisses, les graisses saturés et le cholestérol présents dans nos données.
+La quantité de lipides recommandé est de 100g par jour. 
 
 
+```{r lipides , echo=FALSE}
+lipides <- select(sans_sodium, Item,Type, Restaurant,TotalFat,Cholesterol)
+lipides <- mutate(lipides, Lipides = TotalFat + Cholesterol)
+lipides <- select(lipides,Item, Type,Lipides, Restaurant ) %>% arrange(desc(Lipides))
+ggplot(lipides, aes(x=Lipides, y=Item)) + geom_point() + geom_vline(xintercept = 100, color="red")
+```
+
+Dans cette analyse, aucun produit ne dépasse la quantité recommandé donc nous alloons garder tous les produits. Notons que les produits les plus riches en lipides proviennent de BurgerKing.
 
 #### Glucides
 
 Dans la famille des glucides, nous retrouvons les glucides, les fibres et le sucre.
+Il est recommandé de consommer entre 250g et 300g de glucides par jour et par personne.
+
+```{r glucides , echo=FALSE}
+glucides <- select(sans_sodium, Item,Type,Restaurant,TotalCarbs, Fiber,Sugar)
+glucides <- mutate(glucides, Glucides = TotalCarbs + Fiber + Sugar)
+glucides <- select(glucides,Item, Type,Glucides, Restaurant ) %>% arrange(desc(Glucides))
+ggplot(glucides, aes(x=Glucides, y=Item)) + geom_point() + geom_vline(xintercept = 300, color="red")
+```
+
+Aucun produit ne depasse cette limite mais il est conseillé de varier son alimentation et de veiller à ne pas manger trop sucré.
+
 
 #### Protéines
 
 Les protéines sont des nutriments nécessaire à notre organisme ....
 A consommer sans modération car jusque aujourd'hui aucune étude ne démontre des effets nocifs à la santé lié à la surconsommation.
 
+```{r proteines , echo=FALSE}
+proteines <- select(sans_sodium, Item,Type,Restaurant,Protein)
+proteines <- select(proteines,Item, Type,Protein, Restaurant ) %>% arrange(desc(Protein))
+ggplot(proteines, aes(x=Protein, y=Item)) + geom_point()
+```
+
+On peut voir sur le graphique qu'il y a peu de produits contenant beaucoup de protéines.
+
 ### Conclusion
+
+Grâce aux analyses, on peut conclure que les restaurants Wendys et BurgerKing ont le plus de produits nocifs pour la santé dans le cas où l'on consommerait un produit pour un jour dans un des restaurants.
 
 ```{r}
 #C'est aussi du brouillon
@@ -187,9 +231,9 @@ aa
 Analyse des calories en fonction de la taille du nom de l'item
 ```{r }
 ###A revoir plus tard
-bgNameSize = burger %>% mutate(NameSize=nchar(Item))
-bgNameSizeAndCal = bgNameSize %>% group_by(NameSize) %>% summarise(mean(Calories)) %>% arrange(`mean(Calories)`)
-bgNameSizeAndCal %>% ggplot(aes(x=NameSize, y=`mean(Calories)`)) + geom_jitter()
+#bgNameSize = burger %>% mutate(NameSize=nchar(Item))
+#bgNameSizeAndCal = bgNameSize %>% group_by(NameSize) %>% summarise(mean(Calories)) %>% arrange(`mean(Calories)`)
+#bgNameSizeAndCal %>% ggplot(aes(x=NameSize, y=`mean(Calories)`)) + geom_jitter()
 ```
 
 Lien entre Serving Size et calories
